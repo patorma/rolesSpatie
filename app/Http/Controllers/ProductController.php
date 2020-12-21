@@ -2,10 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+
+    public function __construct(){
+
+        $this->middleware('permission:product-list|product-create|product-edit|product-delete', ['only' => ['index','show']]);
+        $this->middleware('permission:product-create', ['only' => ['create','store']]);
+        $this->middleware('permission:product-edit', ['only' => ['edit','update']]);
+        $this->middleware('permission:product-delete', ['only' => ['destroy']]);
+    }
     /**
      * Display a listing of the resource.
      *
@@ -13,7 +22,11 @@ class ProductController extends Controller
      */
     public function index()
     {
-        //
+         // Muestra una coleccion del recurso
+         // latest es mcomo un orderBy
+          $products =Product::latest()->paginate(5);
+          return view('products.index',compact('products'))
+          ->with('i', (request()->input('page', 1) - 1) * 5);
     }
 
     /**
@@ -23,7 +36,8 @@ class ProductController extends Controller
      */
     public function create()
     {
-        //
+        // Mostramos un formulario para crear nuevos ejemplos
+        return view('products.create');
     }
 
     /**
@@ -34,7 +48,16 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+           // Almacenar en la base de datos nuevos recursos 
+        request()->validate([
+            'name' => 'required',
+            'detail' => 'required',
+        ]);
+    
+        Product::create($request->all());
+    
+        return redirect()->route('products.index')
+                        ->with('success','Product created successfully.');
     }
 
     /**
@@ -43,9 +66,10 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Product $product)
     {
-        //
+        // Muestra un recurso
+        return view('products.show',compact('product'));
     }
 
     /**
@@ -54,9 +78,10 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
-    {
-        //
+    public function edit(Product $product)
+
+    {       // Muestra un formulario para editar un recurso
+           return view('products.edit',compact('product'));
     }
 
     /**
@@ -66,9 +91,18 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Product $product)
     {
-        //
+        // Actualizar un recurso especifico
+        request()->validate([
+            'name' => 'required',
+            'detail' => 'required',
+        ]);
+    
+        $product->update($request->all());
+    
+        return redirect()->route('products.index')
+                        ->with('success','Product updated successfully');
     }
 
     /**
@@ -77,8 +111,13 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Product $product)
     {
-        //
+         // Eliminar un recurso
+         $product->delete();
+    
+         return redirect()->route('products.index')
+                         ->with('success','Product deleted successfully');
+
     }
 }
